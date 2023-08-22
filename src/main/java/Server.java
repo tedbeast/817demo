@@ -2,6 +2,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import io.javalin.Javalin;
 import io.javalin.http.Context;
 
@@ -11,27 +15,27 @@ public class Server {
         Javalin app = Javalin.create();
 
         app.get("/", Server::handler1);
-        app.get("/endpoint", Server::handler2);
-        app.post("/endpoint1", Server::handler3);
-
+        app.get("/hello/{name}", Server::helloHandler);
         app.start(7070);
-    
-        /*
-        List<String> names = new ArrayList<>();
-        names.add("Joe");
-        names.add("Bill");
-        names.add("Jane");
-        names.add("Sally");
+        app.post("painting", Server::postPaintingHandler);
+        app.get("unauthorized", Server::handleUnauthorized);
 
-        names.stream().forEach(name -> {System.out.println(name);});
-        // provide java with a method that determines if a item should be filtered out of a result stream, then turn it back to a list
-        List<String> namesWithoutJ = names.stream().filter(name -> {return !name.contains("J");}).collect(Collectors.toList());
-        System.out.println(namesWithoutJ);
-        // provide java with a method that transforms every piece of data in the stream
-        List<String> uppercaseNames = names.stream().map(name -> {return name.toUpperCase();}).collect(Collectors.toList());
-        System.out.println(uppercaseNames);
-        */
     }
+    public static void postPaintingHandler(Context ctx) throws JsonMappingException, JsonProcessingException{
+        // {"author":"wassily kandinsky", "title":"composition x"}
+        String requestBody = ctx.body(); 
+        ObjectMapper om = new ObjectMapper();
+        Painting painting = om.readValue(requestBody, Painting.class);
+        if(painting.title == null){
+            ctx.status(400);
+        }else{
+            ctx.json(painting);
+        }
+    }
+    public static void handleUnauthorized(Context ctx){
+        ctx.status(401);
+    }
+
     /*
      * Context is the object in Javalin that represents your interaction with both the HTTP request and HTTP response
      */
@@ -39,11 +43,24 @@ public class Server {
         System.out.println("hello console");
         ctx.result("Hello Javalin");
     }
-    public static void handler2(Context ctx){
-        System.out.println("hello console");
-        ctx.result("response 2");
+
+    public static void helloHandler(Context ctx){
+        String str = ctx.pathParam("name");
+        // ctx.result(str);
+        ctx.json(str);
     }
-    public static void handler3(Context ctx){
-        // do something here
-    }
+    /**
+     * path parameters
+     * website.com/accounts/12345
+     * website.com/accounts/{account_id}
+     * query parameters
+     * website.com/search?search_query=something
+     * headers
+     * (security stuff, generally)
+     * request body
+     * (a certain piece of data)
+     * status codes
+     * (was the response successful?)
+     */
+
 }
